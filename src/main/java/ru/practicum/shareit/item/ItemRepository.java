@@ -22,11 +22,11 @@ public class ItemRepository {
         return items.get(id);
     }
 
-    public Item addItem(Item Item) {
-        Item.setId(lastId);
-        items.put(lastId, Item);
+    public Item addItem(Item item) {
+        item.setId(lastId);
+        items.put(lastId, item);
         lastId++;
-        return Item;
+        return item;
     }
 
     public Item editItem(int id, Item editItem) {
