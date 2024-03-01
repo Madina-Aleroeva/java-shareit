@@ -55,6 +55,8 @@ public class ItemRepository {
     }
 
     private boolean equals(String search, Item item) {
+        if (!item.getAvailable())
+            return false;
         return hasOccurrence(search, item.getName()) || hasOccurrence(search, item.getDescription());
     }
 
