@@ -6,12 +6,18 @@ import ru.practicum.shareit.item.Item;
 @Service
 public class ItemMapper {
 
-    public static Item convertToModel(ItemDto itemDto) {
-        return new Item(itemDto.getId(), itemDto.getName(), itemDto.getDescription(), itemDto.getAvailable());
+    public Item convertToModel(ItemDto itemDto) {
+        return new Item(itemDto.getId(), itemDto.getName(), itemDto.getDescription(),
+                itemDto.getAvailable(), itemDto.getLastBooking(), itemDto.getNextBooking(),
+                itemDto.getComments());
     }
 
-    public static ItemDto convertToDto(Item item) {
-        return new ItemDto(item.getId(), item.getName(), item.getDescription(), item.getAvailable());
+    public ItemDto convertToDto(Item item) {
+        return new ItemDto(item.getId(), item.getName(), item.getDescription(),
+                item.getAvailable(), item.getLastBooking(), item.getNextBooking(),
+                item.getComments());
     }
 
 }
+
+
