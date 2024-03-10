@@ -16,7 +16,7 @@ public class Comment {
     @Id
     @SequenceGenerator(name = "comments_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "comments_seq")
-    private int id;
+    private Integer id;
 
     @ManyToOne
     private Item item;
@@ -27,7 +27,7 @@ public class Comment {
 
     private LocalDateTime created;
 
-    public Comment(int id, String text, String authorName, LocalDateTime created) {
+    public Comment(Integer id, String text, String authorName, LocalDateTime created) {
         this.id = id;
         this.text = text;
         this.authorName = authorName;

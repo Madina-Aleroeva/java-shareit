@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 public class CommentDto {
-    private int id;
+    private Integer id;
 
     private String text;
 
@@ -16,7 +16,7 @@ public class CommentDto {
 
     private LocalDateTime created;
 
-    public CommentDto(int id, String text, String authorName, LocalDateTime created) {
+    public CommentDto(Integer id, String text, String authorName, LocalDateTime created) {
         this.id = id;
         this.text = text;
         this.authorName = authorName;
