@@ -1,30 +1,22 @@
 package ru.practicum.shareit.booking;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import javax.persistence.*;
 import java.time.LocalDateTime;
 
-@Data
-@Table(name = "bookings_info")
-@Entity
+@Getter
+@Setter
 @NoArgsConstructor
 public class BookingInfo {
-    @Id
     private int id;
-
     private Integer bookerId;
-
-    @Column(name = "start_date")
     private LocalDateTime start;
-
-    @Column(name = "end_date")
     private LocalDateTime end;
-
-    @Enumerated(EnumType.STRING)
     private BookingStatus status;
 
+    // create booking info using booking entity
     public BookingInfo(Booking booking) {
         this.id = booking.getId();
         this.bookerId = booking.getBooker() == null ? null : booking.getBooker().getId();

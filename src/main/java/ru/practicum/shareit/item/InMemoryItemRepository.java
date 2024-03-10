@@ -1,6 +1,7 @@
 package ru.practicum.shareit.item;
 
 import org.springframework.stereotype.Repository;
+import ru.practicum.shareit.item.service.ItemServiceImpl;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,15 +32,7 @@ public class InMemoryItemRepository {
 
     public Item editItem(int id, Item editItem) {
         Item curItem = items.get(id);
-        if (editItem.getName() != null) {
-            curItem.setName(editItem.getName());
-        }
-        if (editItem.getDescription() != null) {
-            curItem.setDescription(editItem.getDescription());
-        }
-        if (editItem.getAvailable() != null) {
-            curItem.setAvailable(editItem.getAvailable());
-        }
+        ItemServiceImpl.extractMethod(editItem, curItem);
         return curItem;
     }
 

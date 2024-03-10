@@ -24,10 +24,10 @@ public class ItemController {
     }
 
     @PostMapping("/{itemId}/comment")
-    public Comment addComment(@RequestBody Comment comment,
-                              @PathVariable int itemId,
-                              @RequestHeader(value = SHARER_USER_ID, required = false) Integer sharerId) {
-        return itemService.addComment(comment, sharerId, itemId);
+    public CommentDto addComment(@RequestBody CommentDto commentDto,
+                                 @PathVariable int itemId,
+                                 @RequestHeader(value = SHARER_USER_ID, required = false) Integer sharerId) {
+        return itemService.addComment(commentDto, sharerId, itemId);
     }
 
     @PatchMapping("/{itemId}")

@@ -1,14 +1,17 @@
 package ru.practicum.shareit.item;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "comments")
+@NoArgsConstructor
 public class Comment {
     @Id
     @SequenceGenerator(name = "comments_seq", allocationSize = 1)
@@ -16,7 +19,6 @@ public class Comment {
     private int id;
 
     @ManyToOne
-    @JsonBackReference
     private Item item;
 
     private String text;
@@ -25,4 +27,10 @@ public class Comment {
 
     private LocalDateTime created;
 
+    public Comment(int id, String text, String authorName, LocalDateTime created) {
+        this.id = id;
+        this.text = text;
+        this.authorName = authorName;
+        this.created = created;
+    }
 }

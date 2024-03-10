@@ -1,7 +1,9 @@
 package ru.practicum.shareit.booking;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.user.User;
 
@@ -12,21 +14,26 @@ import java.time.LocalDateTime;
  * TODO Sprint add-bookings.
  */
 
-@Data
+@Getter
+@Setter
 @Table(name = "bookings")
 @Entity
+@AllArgsConstructor
 @NoArgsConstructor
 public class Booking {
     @Id
     @SequenceGenerator(name = "booking_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "booking_seq")
-    private int id;
+    private Integer id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Item item;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private User booker;
+
+    @Enumerated(EnumType.STRING)
+    private BookingStatus status;
 
     @Column(name = "start_date")
     private LocalDateTime start;
@@ -34,26 +41,24 @@ public class Booking {
     @Column(name = "end_date")
     private LocalDateTime end;
 
-    private String feedback;
-
-    @Enumerated(EnumType.STRING)
-    private BookingStatus status;
-
-    public Booking(int id, Item item, User booker,
-                   LocalDateTime start, LocalDateTime end,
-                   String feedback, BookingStatus status) {
-        this.id = id;
-        this.item = item;
-        this.booker = booker;
-        this.start = start;
-        this.end = end;
-        this.feedback = feedback;
-        this.status = status;
-    }
-
     public User getOwner() {
         if (item == null)
             return null;
         return item.getOwner();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Booking)) return false;
+
+        Booking booking = (Booking) o;
+
+        return getId() != null ? getId().equals(booking.getId()) : booking.getId() == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return getId() != null ? getId().hashCode() : 0;
     }
 }

@@ -1,38 +1,43 @@
 package ru.practicum.shareit.user;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import javax.persistence.*;
 
 /**
  * TODO Sprint add-controllers.
  */
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "users")
+@NoArgsConstructor
+@AllArgsConstructor
 public class User {
     @Id
     @SequenceGenerator(name = "users_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "users_seq")
-    private int id;
+    private Integer id;
 
     private String name;
 
     private String email;
 
-//    @OneToMany(mappedBy = "owner")
-//    @JsonManagedReference
-//    private Set<Item> ownerItems;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof User)) return false;
 
-//    @OneToMany(mappedBy = "tenant")
-//    private Set<Item> tenantItems;
+        User user = (User) o;
 
-    public User() {
+        return getId() != null ? getId().equals(user.getId()) : user.getId() == null;
     }
 
-    public User(int id, String name, String email) {
-        this.id = id;
-        this.name = name;
-        this.email = email;
+    @Override
+    public int hashCode() {
+        return getId() != null ? getId().hashCode() : 0;
     }
 }

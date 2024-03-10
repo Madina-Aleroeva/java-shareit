@@ -2,6 +2,8 @@ package ru.practicum.shareit.booking;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.BookingStatusDto;
+import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.Item;
@@ -9,28 +11,32 @@ import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class BookingValidator {
-    private final BookingRepository bookingRepository;
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
 
+    public BookingStatusDto getStatus(String status) {
+        try {
+            return BookingStatusDto.valueOf(status);
+        } catch (IllegalArgumentException e) {
+            throw new ValidationException("Unknown state: " + status);
+        }
+    }
+
     public void checkSharerId(int sharerId) {
-        if (userRepository.findById(sharerId).isEmpty())
+        if (userRepository.findById(sharerId).isEmpty()) {
             throw new NotFoundException("not found sharer id");
+        }
     }
 
     public void checkItemId(int itemId) {
-        Optional<Item> item = itemRepository.findById(itemId);
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("item not found"));
 
-        if (item.isEmpty()) {
-            throw new NotFoundException("item not found");
-        }
-
-        if (!item.get().getAvailable()) {
+        if (!item.getAvailable()) {
             throw new ValidationException("item is not available");
         }
     }
@@ -38,12 +44,12 @@ public class BookingValidator {
     public void checkDates(BookingDto booking) {
         LocalDateTime start = booking.getStart();
         LocalDateTime end = booking.getEnd();
+        LocalDateTime now = LocalDateTime.now();
 
         if (start == null || end == null) {
             throw new ValidationException("date can't be null");
         }
-
-        if (end.isBefore(LocalDateTime.now())) {
+        if (end.isBefore(now)) {
             throw new ValidationException("end in past");
         }
         if (end.isBefore(start)) {
@@ -52,7 +58,7 @@ public class BookingValidator {
         if (end.isEqual(start)) {
             throw new ValidationException("end equal start");
         }
-        if (start.isBefore(LocalDateTime.now())) {
+        if (start.isBefore(now)) {
             throw new ValidationException("start in past");
         }
     }

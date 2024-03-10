@@ -20,37 +20,38 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
     @Override
     public List<UserDto> getAllUsers() {
-        return userRepository.findAll().stream().map(UserMapper::convertToDto).collect(Collectors.toList());
+        return userRepository.findAll().stream().map(userMapper::convertToDto).collect(Collectors.toList());
     }
 
     @Override
-    public UserDto getUser(int userId) {
+    public UserDto getUser(Integer userId) {
         Optional<User> user = userRepository.findById(userId);
         if (user.isEmpty()) {
             throw new NotFoundException("not found user");
         }
-        return UserMapper.convertToDto(user.get());
+        return userMapper.convertToDto(user.get());
     }
 
     @Override
     public UserDto addUser(UserDto userDto) {
-        User user = UserMapper.convertToUser(userDto);
+        User user = userMapper.convertToUser(userDto);
         checkEmail(user.getEmail());
-        log.debug("add user {}", user);
+
         userRepository.save(user);
         userRepository.flush();
         if (user.getEmail() != null) {
             checkDuplicateAdd(user.getEmail(), user.getId());
         }
-        System.out.println("add user" + user);
-        return UserMapper.convertToDto(user);
+        return userMapper.convertToDto(user);
     }
 
-    private User editUser(int id, User editUser) {
-        User curUser = userRepository.findById(id).get();
+    private User editUser(Integer id, User editUser) {
+        User curUser = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("not found user"));
         if (editUser.getEmail() != null) {
             curUser.setEmail(editUser.getEmail());
         }
@@ -59,44 +60,36 @@ public class UserServiceImpl implements UserService {
         }
         userRepository.save(curUser);
         userRepository.flush();
-        System.out.println("edit user " + curUser);
         return curUser;
     }
 
     @Override
-    public UserDto editUser(int userId, UserDto userDto) {
-        System.out.println("start edit user " + userId);
-        User user = UserMapper.convertToUser(userDto);
+    public UserDto editUser(Integer userId, UserDto userDto) {
+        User user = userMapper.convertToUser(userDto);
         if (user.getEmail() != null) {
             checkEmail(user.getEmail());
             checkDuplicateEdit(user.getEmail(), userId);
         }
-        log.debug("edit user {}", user);
 
-        return UserMapper.convertToDto(editUser(userId, user));
+        return userMapper.convertToDto(editUser(userId, user));
     }
 
     @Override
-    public void delUser(int userId) {
-        log.debug("del user {}", userId);
-        System.out.println("delete user " + userId);
+    public void delUser(Integer userId) {
         userRepository.deleteById(userId);
     }
 
-    private void checkDuplicateAdd(String email, int userId) {
+    private void checkDuplicateAdd(String email, Integer userId) {
         List<User> users = userRepository.findAllByEmail(email);
-        if (!users.isEmpty() && users.get(0).getId() != userId) {
-            System.out.println("found duplicates: " + users.get(0).getId() + ", " + userId);
+        if (!users.isEmpty() && !users.get(0).getId().equals(userId)) {
             userRepository.deleteById(userId);
-            System.out.println("delete user " + userId);
             throw new DuplicateException("Email " + email + " already exists");
         }
     }
 
-    private void checkDuplicateEdit(String email, int userId) {
+    private void checkDuplicateEdit(String email, Integer userId) {
         List<User> users = userRepository.findAllByEmail(email);
-        if (!users.isEmpty() && users.get(0).getId() != userId) {
-            System.out.println("found duplicates: " + users.get(0).getId() + ", " + userId);
+        if (!users.isEmpty() && !users.get(0).getId().equals(userId)) {
             throw new DuplicateException("Email " + email + " already exists");
         }
     }
