@@ -3,14 +3,19 @@ package ru.practicum.shareit.item.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.booking.BookingInfo;
+import ru.practicum.shareit.booking.BookingRepository;
+import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
-import ru.practicum.shareit.item.Item;
-import ru.practicum.shareit.item.ItemRepository;
+import ru.practicum.shareit.item.*;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemMapper;
 import ru.practicum.shareit.user.UserRepository;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,65 +25,129 @@ import java.util.stream.Collectors;
 public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
+    private final ItemMapper itemMapper;
+    private final BookingRepository bookingRepository;
+    private final CommentRepository commentRepository;
+    private final ItemValidator itemValidator;
+    private final CommentMapper commentMapper;
 
     @Override
-    public List<ItemDto> getOwnerItems(int userId) {
-        return itemRepository.getAllItems(userId).stream().map(ItemMapper::convertToDto).collect(Collectors.toList());
+    public List<ItemDto> getOwnerItems(Integer sharerId) {
+        List<Booking> bookings = bookingRepository.findAllByItemOwnerIdAndStatusOrderByStart(sharerId, BookingStatus.APPROVED);
+
+        return itemRepository.findAllByOwnerId(sharerId).stream()
+                .map(itemMapper::convertToDto)
+                .map(itemDto -> addBookings(itemDto, itemDto.getId(), bookings))
+                .collect(Collectors.toList());
+    }
+
+    private ItemDto addBookings(ItemDto itemDto, Integer itemId, List<Booking> allBookings) {
+
+        LocalDateTime now = LocalDateTime.now();
+
+        List<Booking> bookings = allBookings.stream().filter(booking -> booking.getItem().getId().equals(itemId)).collect(Collectors.toList());
+
+        for (Booking booking : bookings) {
+            if (booking.getStart().isBefore(now)) {
+                itemDto.setLastBooking(new BookingInfo(booking));
+            }
+            if (booking.getStart().isAfter(now)) {
+                itemDto.setNextBooking(new BookingInfo(booking));
+                break;
+            }
+        }
+        return itemDto;
     }
 
     @Override
-    public ItemDto getItem(int itemId) {
-        return ItemMapper.convertToDto(itemRepository.getItem(itemId));
+    public ItemDto getItem(Integer itemId, Integer sharerId) {
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("not found item"));
+        ItemDto itemDto = itemMapper.convertToDto(item);
+        List<Booking> bookings = bookingRepository.findAllByItemOwnerIdAndStatusOrderByStart(sharerId, BookingStatus.APPROVED);
+        addBookings(itemDto, itemId, bookings);
+        return itemDto;
     }
 
     @Override
     public ItemDto addItem(ItemDto itemDto, Integer sharerId) {
-        checkSharerId(sharerId);
-        Item item = ItemMapper.convertToModel(itemDto);
-        checkItemFields(item);
-        item.setOwner(userRepository.getUser(sharerId));
-        return ItemMapper.convertToDto(itemRepository.addItem(item));
+        Item item = itemMapper.convertToModel(itemDto);
+        itemValidator.checkItemFields(item);
+        itemValidator.checkSharerId(sharerId);
+        item.setOwner(userRepository.findById(sharerId)
+                .orElseThrow(() -> new NotFoundException("not found item")));
+        return itemMapper.convertToDto(itemRepository.save(item));
     }
 
     @Override
-    public ItemDto editItem(int itemId, ItemDto itemDto, Integer sharerId) {
-        checkSharerId(sharerId);
-        Item existingItem = itemRepository.getItem(itemId);
-        Item newItem = ItemMapper.convertToModel(itemDto);
-        if (existingItem.getOwner().getId() != sharerId) {
+    public CommentDto addComment(CommentDto commentDto, Integer sharerId, Integer itemId) {
+        Comment comment = commentMapper.convertToModel(commentDto);
+        if (comment.getText().isEmpty()) {
+            throw new ValidationException("text is empty");
+        }
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("not found item"));
+
+        List<Booking> bookings = bookingRepository.findAllByBookerIdAndItemIdAndStatusAndStartBefore(sharerId, itemId, BookingStatus.APPROVED, LocalDateTime.now());
+        if (bookings.isEmpty()) {
+            throw new ValidationException("not found such booking");
+        }
+
+        comment.setCreated(LocalDateTime.now());
+        comment.setAuthorName(userRepository.findById(sharerId)
+                .orElseThrow(() -> new NotFoundException("not found user")).getName());
+        comment.setItem(item);
+
+        commentRepository.save(comment);
+        commentRepository.flush();
+
+        return commentMapper.convertToDto(comment);
+    }
+
+    private Item editItem(Integer id, Item editItem) {
+        Item curItem = itemRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("not found item"));
+
+        extractMethod(editItem, curItem);
+
+        itemRepository.save(curItem);
+        return curItem;
+    }
+
+    public static void extractMethod(Item editItem, Item curItem) {
+        if (editItem.getName() != null) {
+            curItem.setName(editItem.getName());
+        }
+        if (editItem.getDescription() != null) {
+            curItem.setDescription(editItem.getDescription());
+        }
+        if (editItem.getAvailable() != null) {
+            curItem.setAvailable(editItem.getAvailable());
+        }
+    }
+
+    @Override
+    public ItemDto editItem(Integer itemId, ItemDto itemDto, Integer sharerId) {
+        itemValidator.checkSharerId(sharerId);
+        Item existingItem = itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("not found item"));
+        Item newItem = itemMapper.convertToModel(itemDto);
+        if (!existingItem.getOwner().getId().equals(sharerId)) {
             throw new NotFoundException("sharer id is not the owners");
         }
-        return ItemMapper.convertToDto(itemRepository.editItem(itemId, newItem));
-    }
-
-    @Override
-    public void delItem(int itemId) {
-        itemRepository.delItem(itemId);
+        return itemMapper.convertToDto(editItem(itemId, newItem));
     }
 
     @Override
     public List<ItemDto> search(String text) {
-        return itemRepository.search(text).stream().map(ItemMapper::convertToDto).collect(Collectors.toList());
+        return searchStr(text).stream().map(itemMapper::convertToDto).collect(Collectors.toList());
     }
 
-    private void checkSharerId(Integer sharerId) {
-        if (sharerId == null) {
-            throw new RuntimeException("sharer user id is empty");
-        }
-        if (!userRepository.containsUser(sharerId)) {
-            throw new NotFoundException("sharer user id doesn't exist");
-        }
-    }
-
-    private void checkItemFields(Item item) {
-        if (item.getName() == null || item.getName().isBlank()) {
-            throw new ValidationException("Item should have name");
-        }
-        if (item.getDescription() == null || item.getDescription().isBlank()) {
-            throw new ValidationException("Item should have description");
-        }
-        if (item.getAvailable() == null) {
-            throw new ValidationException("Item should have available");
-        }
+    public List<Item> searchStr(String search) {
+        search = search.toLowerCase().trim();
+        if (search.isBlank())
+            return Collections.emptyList();
+        return itemRepository.findAllByNameContainsIgnoreCaseOrDescriptionContainsIgnoreCase(search, search)
+                .stream().filter(Item::getAvailable).collect(Collectors.toList());
     }
 }

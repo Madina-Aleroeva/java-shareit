@@ -23,6 +23,13 @@ public class ItemController {
         return itemService.addItem(itemDto, sharerId);
     }
 
+    @PostMapping("/{itemId}/comment")
+    public CommentDto addComment(@RequestBody CommentDto commentDto,
+                                 @PathVariable Integer itemId,
+                                 @RequestHeader(value = SHARER_USER_ID, required = false) Integer sharerId) {
+        return itemService.addComment(commentDto, sharerId, itemId);
+    }
+
     @PatchMapping("/{itemId}")
     public ItemDto editItem(@PathVariable int itemId, @RequestBody ItemDto itemDto,
                             @RequestHeader(value = SHARER_USER_ID, required = false) Integer sharerId) {
@@ -30,8 +37,9 @@ public class ItemController {
     }
 
     @GetMapping("/{itemId}")
-    public ItemDto getItem(@PathVariable int itemId) {
-        return itemService.getItem(itemId);
+    public ItemDto getItem(@PathVariable int itemId,
+                           @RequestHeader(value = SHARER_USER_ID, required = false) Integer sharerId) {
+        return itemService.getItem(itemId, sharerId);
     }
 
     @GetMapping
