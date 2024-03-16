@@ -12,7 +12,7 @@ import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.*;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemMapper;
-import ru.practicum.shareit.user.UserRepository;
+import ru.practicum.shareit.user.service.UserService;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -24,12 +24,22 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
-    private final UserRepository userRepository;
     private final ItemMapper itemMapper;
     private final BookingRepository bookingRepository;
     private final CommentRepository commentRepository;
     private final ItemValidator itemValidator;
     private final CommentMapper commentMapper;
+    private final UserService userService;
+
+    @Override
+    public Item findItem(Integer itemId) {
+        if (itemId == null) {
+            throw new ValidationException("item id can't be null");
+        }
+
+        return itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException(String.format("not found item with id %d", itemId)));
+    }
 
     @Override
     public List<ItemDto> getOwnerItems(Integer sharerId) {
@@ -61,8 +71,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto getItem(Integer itemId, Integer sharerId) {
-        Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException("not found item"));
+        Item item = findItem(itemId);
         ItemDto itemDto = itemMapper.convertToDto(item);
         List<Booking> bookings = bookingRepository.findAllByItemOwnerIdAndStatusOrderByStart(sharerId, BookingStatus.APPROVED);
         addBookings(itemDto, itemId, bookings);
@@ -73,9 +82,7 @@ public class ItemServiceImpl implements ItemService {
     public ItemDto addItem(ItemDto itemDto, Integer sharerId) {
         Item item = itemMapper.convertToModel(itemDto);
         itemValidator.checkItemFields(item);
-        itemValidator.checkSharerId(sharerId);
-        item.setOwner(userRepository.findById(sharerId)
-                .orElseThrow(() -> new NotFoundException("not found item")));
+        item.setOwner(userService.findUser(sharerId));
         return itemMapper.convertToDto(itemRepository.save(item));
     }
 
@@ -85,8 +92,7 @@ public class ItemServiceImpl implements ItemService {
         if (comment.getText().isEmpty()) {
             throw new ValidationException("text is empty");
         }
-        Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException("not found item"));
+        Item item = findItem(itemId);
 
         List<Booking> bookings = bookingRepository.findAllByBookerIdAndItemIdAndStatusAndStartBefore(sharerId, itemId, BookingStatus.APPROVED, LocalDateTime.now());
         if (bookings.isEmpty()) {
@@ -94,8 +100,7 @@ public class ItemServiceImpl implements ItemService {
         }
 
         comment.setCreated(LocalDateTime.now());
-        comment.setAuthorName(userRepository.findById(sharerId)
-                .orElseThrow(() -> new NotFoundException("not found user")).getName());
+        comment.setAuthorName(userService.findUser(sharerId).getName());
         comment.setItem(item);
 
         commentRepository.save(comment);
@@ -105,8 +110,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     private Item editItem(Integer id, Item editItem) {
-        Item curItem = itemRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("not found item"));
+        Item curItem = findItem(id);
 
         extractMethod(editItem, curItem);
 
@@ -128,9 +132,8 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto editItem(Integer itemId, ItemDto itemDto, Integer sharerId) {
-        itemValidator.checkSharerId(sharerId);
-        Item existingItem = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException("not found item"));
+        userService.findUser(sharerId);
+        Item existingItem = findItem(itemId);
         Item newItem = itemMapper.convertToModel(itemDto);
         if (!existingItem.getOwner().getId().equals(sharerId)) {
             throw new NotFoundException("sharer id is not the owners");
@@ -144,7 +147,6 @@ public class ItemServiceImpl implements ItemService {
     }
 
     public List<Item> searchStr(String search) {
-        search = search.toLowerCase().trim();
         if (search.isBlank())
             return Collections.emptyList();
         return itemRepository.findAllByNameContainsIgnoreCaseOrDescriptionContainsIgnoreCase(search, search)

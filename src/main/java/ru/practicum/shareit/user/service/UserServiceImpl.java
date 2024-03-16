@@ -12,7 +12,6 @@ import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.dto.UserMapper;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,17 +22,23 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
 
     @Override
+    public User findUser(Integer userId) {
+        if (userId == null) {
+            throw new ValidationException("user id can't be null");
+        }
+
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(String.format("not found user with id %d", userId)));
+    }
+
+    @Override
     public List<UserDto> getAllUsers() {
         return userRepository.findAll().stream().map(userMapper::convertToDto).collect(Collectors.toList());
     }
 
     @Override
     public UserDto getUser(Integer userId) {
-        Optional<User> user = userRepository.findById(userId);
-        if (user.isEmpty()) {
-            throw new NotFoundException("not found user");
-        }
-        return userMapper.convertToDto(user.get());
+        return userMapper.convertToDto(findUser(userId));
     }
 
     @Override
@@ -50,8 +55,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private User editUser(Integer id, User editUser) {
-        User curUser = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("not found user"));
+        User curUser = findUser(id);
         if (editUser.getEmail() != null) {
             curUser.setEmail(editUser.getEmail());
         }

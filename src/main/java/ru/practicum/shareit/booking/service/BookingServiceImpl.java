@@ -3,18 +3,15 @@ package ru.practicum.shareit.booking.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.BookingStatusDto;
-import ru.practicum.shareit.booking.Booking;
-import ru.practicum.shareit.booking.BookingRepository;
-import ru.practicum.shareit.booking.BookingStatus;
-import ru.practicum.shareit.booking.BookingValidator;
+import ru.practicum.shareit.booking.*;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingMapper;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.Item;
-import ru.practicum.shareit.item.ItemRepository;
+import ru.practicum.shareit.item.service.ItemService;
 import ru.practicum.shareit.user.User;
-import ru.practicum.shareit.user.UserRepository;
+import ru.practicum.shareit.user.service.UserService;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -25,32 +22,41 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
-    private final ItemRepository itemRepository;
-    private final UserRepository userRepository;
     private final BookingValidator bookingValidator;
     private final BookingMapper bookingMapper;
+    private final ItemService itemService;
+    private final UserService userService;
+    private final PageValidation pageValidation;
+
+    @Override
+    public Booking findBooking(Integer bookingId) {
+        if (bookingId == null) {
+            throw new ValidationException("booking id can't be null");
+        }
+        return bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new NotFoundException(String.format("not found booking with id %d", bookingId)));
+    }
 
     @Override
     public BookingDto createBooking(BookingDto bookingDto, Integer sharerId) {
-        bookingValidator.checkSharerId(sharerId);
-        bookingValidator.checkItemId(bookingDto.getItemId());
+        User booker = userService.findUser(sharerId);
+        Item item = itemService.findItem(bookingDto.getItemId());
+
         bookingValidator.checkDates(bookingDto);
 
         Booking booking = bookingMapper.convertToModel(bookingDto);
-
-        Item item = itemRepository.findById(bookingDto.getItemId())
-                .orElseThrow(() -> new NotFoundException("not found item"));
 
         if (item.getOwner().getId().equals(sharerId)) {
             throw new NotFoundException("owner can't be booker");
         }
 
-        User booker = userRepository.findById(sharerId)
-                .orElseThrow(() -> new NotFoundException("not found booker"));
+        if (!item.getAvailable()) {
+            throw new ValidationException("item is not available");
+        }
+
         booking.setBooker(booker);
         booking.setStatus(BookingStatus.WAITING);
         booking.setItem(item);
-
 
         bookingRepository.save(booking);
         bookingRepository.flush();
@@ -60,8 +66,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingDto acceptBooking(Integer bookingId, Integer userId, Boolean approved) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new NotFoundException("not found booking"));
+        Booking booking = findBooking(bookingId);
 
         if (!booking.getOwner().getId().equals(userId)) {
             throw new NotFoundException("Only owner can edit booking status");
@@ -78,8 +83,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingDto getBooking(Integer bookingId, Integer userId) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new NotFoundException("not found booking"));
+        Booking booking = findBooking(bookingId);
 
         if (!(booking.getOwner().getId().equals(userId) || booking.getBooker().getId().equals(userId))) {
             throw new NotFoundException("Only owner or booker cat get booking");
@@ -89,29 +93,39 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingDto> getBookerBookings(String status, Integer userId) {
-        bookingValidator.checkSharerId(userId);
+    public List<BookingDto> getBookerBookings(String status, Integer userId, Integer from, Integer size) {
+        userService.findUser(userId);
+        pageValidation.checkPage(from, size);
         BookingStatusDto state = bookingValidator.getStatus(status);
-        return convertListToDto(getBookerBookingsState(state, userId));
+        return convertListToDto(getBookerBookingsState(state, userId, from, size));
     }
 
     @Override
-    public List<BookingDto> getOwnerBookings(String status, Integer userId) {
-        bookingValidator.checkSharerId(userId);
+    public List<BookingDto> getOwnerBookings(String status, Integer userId, Integer from, Integer size) {
+        userService.findUser(userId);
+        pageValidation.checkPage(from, size);
         BookingStatusDto state = bookingValidator.getStatus(status);
-        return convertListToDto(getOwnerBookingsState(state, userId));
+        return convertListToDto(getOwnerBookingsState(state, userId, from, size));
     }
 
     private List<BookingDto> convertListToDto(List<Booking> bookings) {
         return bookings.stream().map(bookingMapper::convertToDto).collect(Collectors.toList());
     }
 
-    private List<Booking> getBookerBookingsState(BookingStatusDto state, Integer userId) {
+    private List<Booking> getBookerBookingsState(BookingStatusDto state, Integer userId, Integer from, Integer size) {
         LocalDateTime now = LocalDateTime.now();
 
         switch (state) {
             case ALL:
-                return bookingRepository.findAllByBookerIdOrderByStartDesc(userId);
+                if (from != null || size != null) {
+//                    Pageable pageable = PageRequest.of((int) from / size, size, Sort.by("start").descending());
+//                    return bookingRepository.findAll(pageable).stream().filter(booking -> booking.getBooker().getId().equals(userId)).collect(Collectors.toList());
+                    List<Booking> bookings = bookingRepository.findAllByBookerIdOrderByStartDesc(userId);
+                    return bookings.subList(from, Math.min(from + size, bookings.size()));
+                } else {
+                    return bookingRepository.findAllByBookerIdOrderByStartDesc(userId);
+                }
+
             case CURRENT:
                 return bookingRepository.findAllByBookerIdAndStartBeforeAndEndAfterOrderByStartDesc(userId, now, now);
             case PAST:
@@ -126,12 +140,19 @@ public class BookingServiceImpl implements BookingService {
         return Collections.emptyList();
     }
 
-    private List<Booking> getOwnerBookingsState(BookingStatusDto state, Integer userId) {
+    private List<Booking> getOwnerBookingsState(BookingStatusDto state, Integer userId, Integer from, Integer size) {
         LocalDateTime now = LocalDateTime.now();
 
         switch (state) {
             case ALL:
-                return bookingRepository.findAllByItemOwnerIdOrderByStartDesc(userId);
+                if (from != null || size != null) {
+//                    Pageable pageable = PageRequest.of((int) from / size, size, Sort.by("start").descending());
+//                    return bookingRepository.findAll(pageable).toList();
+                    List<Booking> bookings = bookingRepository.findAllByItemOwnerIdOrderByStartDesc(userId);
+                    return bookings.subList(from, Math.min(from + size, bookings.size()));
+                } else {
+                    return bookingRepository.findAllByItemOwnerIdOrderByStartDesc(userId);
+                }
             case CURRENT:
                 return bookingRepository.findAllByItemOwnerIdAndStartBeforeAndEndAfterOrderByStartDesc(userId, now, now);
             case PAST:

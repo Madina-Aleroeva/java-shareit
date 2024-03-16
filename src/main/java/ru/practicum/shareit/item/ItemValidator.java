@@ -2,8 +2,6 @@ package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.practicum.shareit.exception.EmptyException;
-import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.user.UserRepository;
 
@@ -11,15 +9,6 @@ import ru.practicum.shareit.user.UserRepository;
 @Service
 public class ItemValidator {
     private final UserRepository userRepository;
-
-    public void checkSharerId(Integer sharerId) {
-        if (sharerId == null) {
-            throw new EmptyException("sharer user id is empty");
-        }
-        if (userRepository.findById(sharerId).isEmpty()) {
-            throw new NotFoundException("sharer user id doesn't exist");
-        }
-    }
 
     public void checkItemFields(Item item) {
         if (item.getName() == null || item.getName().isBlank()) {
