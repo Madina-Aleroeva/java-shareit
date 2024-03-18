@@ -18,7 +18,7 @@ public class Comment {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "comments_seq")
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     private Item item;
 
     private String text;

@@ -24,14 +24,14 @@ public class Item {
     @EqualsAndHashCode.Include
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     private User owner;
 
     private String name;
 
     private String description;
 
-    @OneToMany(mappedBy = "item", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "item", fetch = FetchType.LAZY)
     private List<Comment> comments;
 
     private Boolean available;

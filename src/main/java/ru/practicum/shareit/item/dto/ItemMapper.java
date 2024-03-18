@@ -35,13 +35,14 @@ public class ItemMapper {
         List<CommentDto> commentDtos = comments == null ? null : comments
                 .stream().map(commentMapper::convertToDto).collect(Collectors.toList());
 
+
         return ItemDto.builder()
                 .id(obj.getId())
                 .name(obj.getName())
                 .description(obj.getDescription())
                 .available(obj.getAvailable())
                 .comments(commentDtos)
-                .requestId(obj.getRequestId())
+                .requestId(obj.getRequestId() == null ? -1 : obj.getRequestId())
                 .build();
     }
 

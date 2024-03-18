@@ -2,6 +2,7 @@ package ru.practicum.shareit.booking.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.BookingStatusDto;
 import ru.practicum.shareit.booking.*;
 import ru.practicum.shareit.booking.dto.BookingDto;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
@@ -145,9 +147,7 @@ public class BookingServiceImpl implements BookingService {
 
         switch (state) {
             case ALL:
-                if (from != null || size != null) {
-//                    Pageable pageable = PageRequest.of((int) from / size, size, Sort.by("start").descending());
-//                    return bookingRepository.findAll(pageable).toList();
+                if (from != null && size != null) {
                     List<Booking> bookings = bookingRepository.findAllByItemOwnerIdOrderByStartDesc(userId);
                     return bookings.subList(from, Math.min(from + size, bookings.size()));
                 } else {
