@@ -1,17 +1,18 @@
 package ru.practicum.shareit.item.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
 import ru.practicum.shareit.booking.BookingInfo;
 import ru.practicum.shareit.item.CommentDto;
 
 import java.util.List;
 
-/**
- * TODO Sprint add-controllers.
- */
 @Data
-@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@EqualsAndHashCode
 public class ItemDto {
     private Integer id;
     private String name;
@@ -20,12 +21,5 @@ public class ItemDto {
     private BookingInfo lastBooking;
     private BookingInfo nextBooking;
     private List<CommentDto> comments;
-
-    public ItemDto(Integer id, String name, String description, Boolean available, List<CommentDto> comments) {
-        this.id = id;
-        this.name = name;
-        this.description = description;
-        this.available = available;
-        this.comments = comments;
-    }
+    private Integer requestId;
 }
