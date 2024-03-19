@@ -44,6 +44,7 @@ public class Booking {
     public User getOwner() {
         if (item == null)
             return null;
+
         return item.getOwner();
     }
 }

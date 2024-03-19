@@ -35,6 +35,7 @@ public class BookingServiceImpl implements BookingService {
         if (bookingId == null) {
             throw new ValidationException("booking id can't be null");
         }
+
         return bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException(String.format("not found booking with id %d", bookingId)));
     }
@@ -119,15 +120,12 @@ public class BookingServiceImpl implements BookingService {
 
         switch (state) {
             case ALL:
-                if (from != null || size != null) {
-//                    Pageable pageable = PageRequest.of((int) from / size, size, Sort.by("start").descending());
-//                    return bookingRepository.findAll(pageable).stream().filter(booking -> booking.getBooker().getId().equals(userId)).collect(Collectors.toList());
+                if (from != null && size != null) {
                     List<Booking> bookings = bookingRepository.findAllByBookerIdOrderByStartDesc(userId);
                     return bookings.subList(from, Math.min(from + size, bookings.size()));
                 } else {
                     return bookingRepository.findAllByBookerIdOrderByStartDesc(userId);
                 }
-
             case CURRENT:
                 return bookingRepository.findAllByBookerIdAndStartBeforeAndEndAfterOrderByStartDesc(userId, now, now);
             case PAST:

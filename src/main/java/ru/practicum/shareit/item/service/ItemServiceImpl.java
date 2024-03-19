@@ -54,9 +54,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     private ItemDto addBookings(ItemDto itemDto, Integer itemId, List<Booking> allBookings) {
-
         LocalDateTime now = LocalDateTime.now();
-
         List<Booking> bookings = allBookings.stream().filter(booking -> booking.getItem().getId().equals(itemId)).collect(Collectors.toList());
 
         for (Booking booking : bookings) {
@@ -113,7 +111,6 @@ public class ItemServiceImpl implements ItemService {
 
     private Item editItem(Integer id, Item editItem) {
         Item curItem = findItem(id);
-
         extractMethod(editItem, curItem);
 
         itemRepository.save(curItem);

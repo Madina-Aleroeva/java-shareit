@@ -4,9 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.BookingStatusDto;
 import ru.practicum.shareit.booking.dto.BookingDto;
-import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
-import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.item.ItemRepository;
 
 import java.time.LocalDateTime;
@@ -22,13 +20,6 @@ public class BookingValidator {
         } catch (IllegalArgumentException e) {
             throw new ValidationException("Unknown state: " + status);
         }
-    }
-
-    public void checkItemId(int itemId) {
-        Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException("item not found"));
-
-
     }
 
     public void checkDates(BookingDto booking) {
