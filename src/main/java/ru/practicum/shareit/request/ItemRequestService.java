@@ -14,9 +14,7 @@ import ru.practicum.shareit.request.dto.ItemRequestMapper;
 import ru.practicum.shareit.user.service.UserService;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -59,7 +57,7 @@ public class ItemRequestService {
         Map<Integer, List<ItemDto>> itemsByRequestId = itemRepository.findAll()
                 .stream()
                 .map(itemMapper::convertToDto)
-                .collect(Collectors.groupingBy(ItemDto::getRequestId));
+                .collect(Collectors.groupingBy(itemDto -> Optional.ofNullable(itemDto.getRequestId()).orElse(Integer.MIN_VALUE)));
 
         return itemRequestRepository.findAllByUserIdOrderByCreatedDesc(sharerId)
                 .stream().map(itemRequestMapper::convertToDto)
@@ -74,7 +72,7 @@ public class ItemRequestService {
         Map<Integer, List<ItemDto>> itemsByRequestId = itemRepository.findAll()
                 .stream()
                 .map(itemMapper::convertToDto)
-                .collect(Collectors.groupingBy(ItemDto::getRequestId));
+                .collect(Collectors.groupingBy(itemDto -> Optional.ofNullable(itemDto.getRequestId()).orElse(Integer.MIN_VALUE)));
 
         return itemRequestRepository.findAllByUserIdNotOrderByCreatedDesc(sharerId)
                 .stream().map(itemRequestMapper::convertToDto)
