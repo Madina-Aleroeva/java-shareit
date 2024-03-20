@@ -19,16 +19,30 @@ public class ItemMapper {
         List<CommentDto> commentDtos = obj.getComments();
         List<Comment> comments = commentDtos == null ? null : commentDtos
                 .stream().map(commentMapper::convertToModel).collect(Collectors.toList());
-        return new Item(obj.getId(), obj.getName(), obj.getDescription(),
-                obj.getAvailable(), comments);
+
+        return Item.builder()
+                .id(obj.getId())
+                .name(obj.getName())
+                .description(obj.getDescription())
+                .available(obj.getAvailable())
+                .comments(comments)
+                .requestId(obj.getRequestId())
+                .build();
     }
 
     public ItemDto convertToDto(Item obj) {
         List<Comment> comments = obj.getComments();
         List<CommentDto> commentDtos = comments == null ? null : comments
                 .stream().map(commentMapper::convertToDto).collect(Collectors.toList());
-        return new ItemDto(obj.getId(), obj.getName(), obj.getDescription(),
-                obj.getAvailable(), commentDtos);
+
+        return ItemDto.builder()
+                .id(obj.getId())
+                .name(obj.getName())
+                .description(obj.getDescription())
+                .available(obj.getAvailable())
+                .comments(commentDtos)
+                .requestId(obj.getRequestId())
+                .build();
     }
 
 }

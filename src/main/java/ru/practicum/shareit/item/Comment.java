@@ -1,8 +1,6 @@
 package ru.practicum.shareit.item;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -12,13 +10,15 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "comments")
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class Comment {
     @Id
     @SequenceGenerator(name = "comments_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "comments_seq")
     private Integer id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Item item;
 
     private String text;
@@ -26,11 +26,4 @@ public class Comment {
     private String authorName;
 
     private LocalDateTime created;
-
-    public Comment(Integer id, String text, String authorName, LocalDateTime created) {
-        this.id = id;
-        this.text = text;
-        this.authorName = authorName;
-        this.created = created;
-    }
 }

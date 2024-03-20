@@ -51,6 +51,4 @@ public class ItemController {
     public List<ItemDto> searchItems(@RequestParam String text) {
         return itemService.search(text);
     }
-
-
 }
