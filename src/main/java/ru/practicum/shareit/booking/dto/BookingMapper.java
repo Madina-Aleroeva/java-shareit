@@ -34,7 +34,13 @@ public class BookingMapper {
         User booker = obj.getBooker();
         UserDto bookerDto = booker == null ? null : userMapper.convertToDto(booker);
 
-        return new BookingDto(obj.getId(), itemDto, bookerDto,
-                obj.getStatus(), obj.getStart(), obj.getEnd());
+        return BookingDto.builder()
+                .id(obj.getId())
+                .item(itemDto)
+                .booker(bookerDto)
+                .status(obj.getStatus())
+                .start(obj.getStart())
+                .end(obj.getEnd())
+                .build();
     }
 }
