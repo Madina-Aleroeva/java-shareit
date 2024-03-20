@@ -104,6 +104,8 @@
 						<systemPropertyVariables>
 							<spring.profiles.active>test</spring.profiles.active>
 						</systemPropertyVariables>
+
+						<reuseForks>false</reuseForks>
 					</configuration>
 				</plugin>
 				<plugin>
