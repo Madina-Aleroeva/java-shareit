@@ -34,8 +34,6 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public Item findItem(Long itemId) {
-        // TODO: itemId != null
-
         return itemRepository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException(String.format("not found item with id %d", itemId)));
     }
@@ -87,7 +85,6 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public CommentDto addComment(CommentDto commentDto, Long sharerId, Long itemId) {
         Comment comment = commentMapper.convertToModel(commentDto);
-        // TODO: gateway text not empty
         Item item = findItem(itemId);
 
         List<Booking> bookings = bookingRepository.findAllByBookerIdAndItemIdAndStatusAndStartBefore(sharerId, itemId, BookingStatus.APPROVED, LocalDateTime.now());

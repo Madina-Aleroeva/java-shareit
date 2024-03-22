@@ -16,7 +16,6 @@ public class BookingInfo {
     private LocalDateTime end;
     private BookingStatus status;
 
-    // create booking info using booking entity
     public BookingInfo(BookingDto booking) {
         this.id = booking.getId();
         this.bookerId = booking.getBooker() == null ? null : booking.getBooker().getId();

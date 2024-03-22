@@ -28,7 +28,6 @@ public class ItemRequestService {
     private final ItemMapper itemMapper;
 
     public ItemRequest findItemRequest(Long requestId) {
-        // TODO: gateway requestId not null
         return itemRequestRepository.findById(requestId)
                 .orElseThrow(() -> new NotFoundException(String.format("not found item request with id %d", requestId)));
     }
@@ -37,7 +36,6 @@ public class ItemRequestService {
         ItemRequest itemRequest = itemRequestMapper.convertToModel(itemRequestDto);
         userService.findUser(sharerId); // check sharerId
         itemRequest.setUserId(sharerId);
-        // TODO: gateway descr not null not empty
         itemRequest.setCreated(LocalDateTime.now());
 
         itemRequestRepository.save(itemRequest);

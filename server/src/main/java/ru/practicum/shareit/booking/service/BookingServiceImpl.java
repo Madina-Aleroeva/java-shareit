@@ -47,7 +47,6 @@ public class BookingServiceImpl implements BookingService {
             throw new NotFoundException("owner can't be booker");
         }
 
-        // TODO: gateway
         if (!item.getAvailable()) {
             throw new ValidationException("item is not available");
         }
@@ -114,7 +113,6 @@ public class BookingServiceImpl implements BookingService {
 
         switch (state) {
             case ALL:
-                // TODO: extract
                 if (from != null || size != null) {
                     List<Booking> bookings = bookingRepository.findAllByBookerIdOrderByStartDesc(userId);
                     return bookings.subList(from.intValue(), Math.min(from.intValue() + size.intValue(), bookings.size()));

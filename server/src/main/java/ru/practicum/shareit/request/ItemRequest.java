@@ -36,6 +36,5 @@ public class ItemRequest {
 
     private LocalDateTime created;
 
-    @OneToMany(fetch = FetchType.LAZY)
     private List<Item> items;
 }
