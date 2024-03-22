@@ -36,5 +36,6 @@ public class ItemRequest {
 
     private LocalDateTime created;
 
+    @OneToMany
     private List<Item> items;
 }
